@@ -3,10 +3,10 @@ body{
     margin:0;
 }
 /* Need to specify width and height of div to have it show up in leaflet */
-#mapid{
+/* #mapid{
     height:100vh; 
-    width:100vw;
-}
+    width:100vw; */
+/* } */
 #panel {    
     width: 16%;    
     padding: 20px;
@@ -14,10 +14,34 @@ body{
     vertical-align: top;
     text-align: center;
     line-height: 42px;
+    /* font-size: 10px */
+}
+.range-slider {  
+    width: 55%;  
+}  
+
+.step {  
+    width: 20%;  
+}  
+
+.step img {  
+    width: 100%;  
+}  
+#forward {
+    float: right;
+    font-size:5pt;
+    /* font: 0px */
+    /* padding: 50px; */
+    }
+    
+#reverse {  
+    float: left;
+    font-size:5pt;  
 }
 
-#map {
-    height: 400px;
+
+#mapid {
+    height: 500px;
     width: 100%;
     display: inline-block;
 }
