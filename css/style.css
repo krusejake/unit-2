@@ -41,7 +41,7 @@ body{
 
 
 #mapid {
-    height: 500px;
+    height: 1200px;
     width: 100%;
     display: inline-block;
 }
@@ -56,6 +56,15 @@ body{
     border: solid gray 1px;  
 }  
 
+.legend-control-container {  
+    width: 210px;  
+    height: 200px;  
+    background-color: rgba(255,255,255,0.8);  
+    padding: 10px;  
+    line-height: 45px;  
+    text-align: center;  
+    border: solid gray 1px;  
+}
 .range-slider {  
     width: 250px;  
 }  

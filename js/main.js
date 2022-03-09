@@ -1,6 +1,7 @@
 //declare map variable globally so all functions have access
 var map;
 var minValue;
+var dataStats = {};  
 
 //Example 1.2 line 1...PopupContent constructor function
 function PopupContent(properties, attribute){
@@ -87,22 +88,31 @@ function pointToLayer(feature,latlng,attributes){
 
 //Step 1: Create new sequence controls
 function createSequenceControls(attributes){
-    console.log('entered createSequenceControls')
-    //create range input element (slider)
-    var slider = "<input class='range-slider' type='range'></input>";
-    document.querySelector("#panel").insertAdjacentHTML('beforeend',slider);
-    //set slider attributes
-    document.querySelector(".range-slider").max = 10;
-    document.querySelector(".range-slider").min = 0;
-    document.querySelector(".range-slider").value = 0;
-    document.querySelector(".range-slider").step = 1;
-    //below Example 3.6...add step buttons
-    document.querySelector('#panel').insertAdjacentHTML('beforeend','<button class="step" id="reverse">Reverse</button>');
-    document.querySelector('#panel').insertAdjacentHTML('beforeend','<button class="step" id="forward">Forward</button>');
-    //replace button content with images
-    document.querySelector('#reverse').insertAdjacentHTML('beforeend',"<img src='img/reverse.png'>");
-    document.querySelector('#forward').insertAdjacentHTML('beforeend',"<img src='img/forward.png'>");
-    //Below Example 3.6 in createSequenceControls()
+    var SequenceControl = L.Control.extend({
+        options: {
+            position: 'bottomleft'
+        },
+
+        onAdd: function () {
+            // create the control container div with a particular class name
+            var container = L.DomUtil.create('div', 'sequence-control-container');
+
+            // ... initialize other DOM elements
+            container.insertAdjacentHTML('beforeend', '<input class="range-slider" type="range">')
+            //add skip buttons
+            container.insertAdjacentHTML('beforeend', '<button class="step" id="reverse" title="Reverse"><img src="img/reverse.png"></button>'); 
+            container.insertAdjacentHTML('beforeend', '<button class="step" id="forward" title="Forward"><img src="img/forward.png"></button>');
+            container.querySelector(".range-slider").max = 10;
+            container.querySelector(".range-slider").min = 0;
+            container.querySelector(".range-slider").value = 0;
+            container.querySelector(".range-slider").step = 1;
+            //disable any mouse event listeners for the container
+            L.DomEvent.disableClickPropagation(container);
+            return container;
+        }
+    });
+
+    map.addControl(new SequenceControl());    // add listeners after adding control}
     //Step 5: click listener for buttons
     document.querySelectorAll('.step').forEach(function(step){
         step.addEventListener("click", function(){
@@ -155,6 +165,7 @@ function updatePropSymbols(attribute){
             //update popup content            
             popup = layer.getPopup();            
             popup.setContent(popupContent.formatted).update();
+            // createLegend(attributes)
         };
         
     });
@@ -178,6 +189,7 @@ function processData(data){
     //push each attribute name into attributes array
     for (var attribute in properties){
         //only take attributes with population values
+        // if (attribute.indexOf("Pop") > -1){
         if ((attribute !='Latitude')&(attribute !='Longitude')&(attribute !='Country')) {
             attributes.push(attribute);
         };
@@ -197,7 +209,86 @@ function getData(){
             minValue = calculateMinValue(json);
             createPropSymbols(json, attributes);
             createSequenceControls(attributes);
+            //calling our renamed function
+            calcStats(json); 
+            createLegend(attributes);
         })
 };
+
+function createLegend(attributes){
+    var LegendControl = L.Control.extend({
+        options: {
+            position: 'bottomright'
+        },
+
+        onAdd: function () {
+            console.log('creating legend')
+            // create the control container with a particular class name
+            var container = L.DomUtil.create('div', 'legend-control-container');
+
+            container.innerHTML = '<p class="temporalLegend">Miltiary spending (USD) <span class="year"></span></p>';
+
+            //Step 1: start attribute legend svg string
+            var svg = '<svg id="attribute-legend" width="220px" height="150px">';
+            //array of circle names to base loop on
+            var circles = ["max", "mean", "min"];
+            console.log('starting to loop the circle creation')
+            //Step 2: loop to add each circle and text to svg string
+            for (var i=0; i<circles.length; i++){
+                //Step 3: assign the r and cy attributes  
+                var radius = calcPropRadius(dataStats[circles[i]])/2;  
+                var cy = 130 - radius; 
+                //evenly space out labels            
+                var textY = i * 30 + 60;   
+                //circle string  
+                svg += '<circle class="legend-circle" id="' + circles[i] + '" r="' + radius + '"cy="' + cy + '" fill="#F47821" fill-opacity="0.8" stroke="#000000" cx="60"/>';  
+            
+                //text string            
+                svg += '<text id="' + circles[i] + '-text" x="120" y="' + textY + '">' + Math.round(dataStats[circles[i]]*100)/100 + " million" + '</text>';
+            };
+            //close svg string  
+            svg += "</svg>"; 
+            console.log(svg)
+            //add attribute legend svg to container
+            container.insertAdjacentHTML('beforeend',svg);
+
+            //add attribute legend svg to container
+            // container.innerHTML += svg;
+
+            return container;
+        }
+    });
+
+    map.addControl(new LegendControl());
+
+};
+
+
+function calcStats(data){
+    console.log('calculating stats')
+    //create empty array to store all data values
+    var allValues = [];
+    //loop through each city
+    for(var country of data.features){
+        //loop through each year
+        // console.log('country: ',country)
+        for(var year = 2010; year <= 2020; year+=1){
+            var value = country.properties[year];
+            //   console.log(year+': '+value)
+              //add value to array
+              if (value != 0) {
+                allValues.push(value);
+              }
+    }
+    //get min, max, mean stats for our array
+    dataStats.min = Math.min(...allValues);
+    dataStats.max = Math.max(...allValues);
+    //calculate meanValue
+    var sum = allValues.reduce(function(a, b){return a+b;});
+    dataStats.mean = sum/ allValues.length;
+    // console.log('stats: ',dataStats.mean,dataStats.min,dataStats.max)
+
+}
+}    
 
 document.addEventListener('DOMContentLoaded',createMap)
